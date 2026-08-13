@@ -8,17 +8,17 @@ A modular **E-Library Management System** backend built with **Node.js, Express,
 
 ## Highlights
 
-- 🔐 JWT authentication with role-based access control (`member` / `librarian`)
-- 🗂️ Membership lifecycle — members register as `pending` and must be approved by a librarian
-- 📚 Full book CRUD with copy management
-- 🔍 Search, filter, sort & paginate the catalog
-- ⭐ Favorites (members can favorite/unfavorite books)
-- 📖 Google Books integration — search and import external books (librarian)
-- 🔄 Borrow/return with atomic copy handling, 14-day loans and overdue fines
-- 🎟️ Reservations/waitlist — auto-fulfilled when a copy is returned
-- 🤖 AI-powered book summaries with 7-day caching + local fallback
-- 🧪 Built-in test console for every endpoint
-- 📧 Password reset via transactional email (Gmail OAuth2)
+- JWT authentication with role-based access control (`member` / `librarian`)
+- Membership lifecycle — members register as `pending` and must be approved by a librarian
+- Full book CRUD with copy management
+- Search, filter, sort & paginate the catalog
+- Favorites (members can favorite/unfavorite books)
+- Google Books integration — search and import external books (librarian)
+- Borrow/return with atomic copy handling, 14-day loans and overdue fines
+- Reservations/waitlist — auto-fulfilled when a copy is returned
+- AI-powered book summaries with 7-day caching + local fallback
+- Built-in test console for every endpoint
+- Password reset via transactional email (Gmail OAuth2)
 
 ---
 
@@ -202,17 +202,17 @@ Token payload: `{ id: <userId> }`, expiry `JWT_EXPIRES_IN` (default `7d`).
 
 | Capability | Member | Librarian |
 |---|---|---|
-| Auth (register/login/logout/profile), password reset | ✅ | ✅ |
-| List & search books, book details, AI summary | ✅ | ✅ |
-| Favorite / unfavorite books | ✅ | ✅ |
-| Borrow & return books | ✅ (active membership) | ✅ |
-| Reserve books (waitlist) | ✅ (active membership) | ✅ |
-| View own history / reservations | ✅ | ✅ |
-| Create / update / delete books | ❌ | ✅ |
-| Google Books search & import | ❌ | ✅ |
-| List all users / pending members | ❌ | ✅ |
-| Approve / reject / suspend memberships | ❌ | ✅ |
-| View all borrow records / reservations | ❌ | ✅ |
+| Auth (register/login/logout/profile), password reset | Yes | Yes |
+| List & search books, book details, AI summary | Yes | Yes |
+| Favorite / unfavorite books | Yes | Yes |
+| Borrow & return books | Yes (active membership) | Yes |
+| Reserve books (waitlist) | Yes (active membership) | Yes |
+| View own history / reservations | Yes | Yes |
+| Create / update / delete books | No | Yes |
+| Google Books search & import | No | Yes |
+| List all users / pending members | No | Yes |
+| Approve / reject / suspend memberships | No | Yes |
+| View all borrow records / reservations | No | Yes |
 
 **Membership workflow:** members register as `pending` → a librarian sets `active` via `PATCH /api/users/:id/membership` (sets `approvedBy`, `approvedAt`, `membershipStartDate`, `membershipEndDate` = +1 year). `rejected`/`suspended` **require a reason**. Borrow eligibility requires `active` membership and unexpired `membershipEndDate` (**librarians always eligible**). Librarian registration requires a `registerKey` matching `LIBRARIAN_REGISTER_KEY`; librarians register as `active`.
 
@@ -430,23 +430,23 @@ All variables are documented in `.env.example`. Never commit real values — `.e
 
 | Feature | Status |
 |---|---|
-| Registration / login / profile / logout | ✅ Implemented |
-| Password reset (email + token) | ✅ Implemented |
-| Membership approval workflow | ✅ Implemented |
-| User list / pending / status updates | ✅ Implemented |
-| Book CRUD | ✅ Implemented |
-| Book search, filter, sort, pagination | ✅ Implemented |
-| Favorites | ✅ Implemented |
-| Google Books search + import | ✅ Implemented |
-| Borrow / return with atomic copies | ✅ Implemented |
-| Overdue tracking (lazy) | ✅ Implemented |
-| Reservations / waitlist + auto-fulfillment | ✅ Implemented |
-| AI book summaries (+ cache + fallback) | ✅ Implemented |
-| Test console frontend | ✅ Implemented |
-| Automated tests | ❌ Planned |
-| Global error handler / 404 handler | ❌ Planned |
-| Rate limiting | ❌ Planned |
-| Refresh tokens / token revocation | ❌ Planned |
+| Registration / login / profile / logout | Implemented |
+| Password reset (email + token) | Implemented |
+| Membership approval workflow | Implemented |
+| User list / pending / status updates | Implemented |
+| Book CRUD | Implemented |
+| Book search, filter, sort, pagination | Implemented |
+| Favorites | Implemented |
+| Google Books search + import | Implemented |
+| Borrow / return with atomic copies | Implemented |
+| Overdue tracking (lazy) | Implemented |
+| Reservations / waitlist + auto-fulfillment | Implemented |
+| AI book summaries (+ cache + fallback) | Implemented |
+| Test console frontend | Implemented |
+| Automated tests | Planned |
+| Global error handler / 404 handler | Planned |
+| Rate limiting | Planned |
+| Refresh tokens / token revocation | Planned |
 
 ---
 
