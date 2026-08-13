@@ -3,6 +3,33 @@ import {
   searchGoogleBooks,
   getGoogleBookById,
 } from "../services/googleBooks.service.js";
+import { generateBookSummary } from "../services/aiSummary.service.js";
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+const serializeBook = (book, userId) => {
+  const obj = book.toObject();
+  obj.favorited = userId
+    ? book.favoritedBy.some((id) => id.toString() === userId.toString())
+    : false;
+  obj.favoriteCount = book.favoritedBy.length;
+  return obj;
+};
+
+const resolveSort = (sort) => {
+  switch (sort) {
+    case "popular":
+      return { borrowCount: -1 };
+    case "title":
+      return { title: 1 };
+    case "newest":
+      return { createdAt: -1 };
+    default:
+      return { _id: -1 };
+  }
+};
 
 // ============================================================
 // GET ALL BOOKS
@@ -10,7 +37,7 @@ import {
 
 const getAllBooks = async (req, res) => {
   try {
-    const { category, page = 1, limit = 10 } = req.query;
+    const { category, sort, page = 1, limit = 10 } = req.query;
 
     const filter = {};
 
@@ -19,13 +46,14 @@ const getAllBooks = async (req, res) => {
     }
 
     const books = await Book.find(filter)
+      .sort(resolveSort(sort))
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
 
     const total = await Book.countDocuments(filter);
 
     return res.status(200).json({
-      books,
+      books: books.map((book) => serializeBook(book, req.user?._id)),
       total,
       page: Number(page),
       limit: Number(limit),
@@ -44,7 +72,7 @@ const getAllBooks = async (req, res) => {
 
 const searchBooks = async (req, res) => {
   try {
-    const { q, category, page = 1, limit = 10 } = req.query;
+    const { q, category, sort, page = 1, limit = 10 } = req.query;
 
     if (!q?.trim()) {
       return res.status(400).json({
@@ -71,13 +99,14 @@ const searchBooks = async (req, res) => {
     }
 
     const books = await Book.find(filter)
+      .sort(resolveSort(sort))
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
 
     const total = await Book.countDocuments(filter);
 
     return res.status(200).json({
-      books,
+      books: books.map((book) => serializeBook(book, req.user?._id)),
       total,
       page: Number(page),
       limit: Number(limit),
@@ -105,7 +134,97 @@ const getBookById = async (req, res) => {
     }
 
     return res.status(200).json({
-      book,
+      book: serializeBook(book, req.user?._id),
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(404).json({
+        message: "Book not found",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// ============================================================
+// FAVORITES
+// ============================================================
+
+const getFavoriteBooks = async (req, res) => {
+  try {
+    const books = await Book.find({
+      favoritedBy: req.user._id,
+    });
+
+    return res.status(200).json({
+      books: books.map((book) => serializeBook(book, req.user._id)),
+      total: books.length,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+const favoriteBook = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const book = await Book.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({
+        message: "Book not found",
+      });
+    }
+
+    if (!book.favoritedBy.some((id) => id.toString() === userId.toString())) {
+      book.favoritedBy.push(userId);
+      await book.save();
+    }
+
+    return res.status(200).json({
+      message: "Book added to favorites",
+      book: serializeBook(book, userId),
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(404).json({
+        message: "Book not found",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+const unfavoriteBook = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const book = await Book.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({
+        message: "Book not found",
+      });
+    }
+
+    book.favoritedBy = book.favoritedBy.filter(
+      (id) => id.toString() !== userId.toString()
+    );
+    await book.save();
+
+    return res.status(200).json({
+      message: "Book removed from favorites",
+      book: serializeBook(book, userId),
     });
   } catch (error) {
     if (error.name === "CastError") {
@@ -480,6 +599,46 @@ const importGoogleBook = async (req, res) => {
 };
 
 // ============================================================
+// AI BOOK SUMMARY
+// ============================================================
+
+const getBookSummary = async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({
+        message: "Book not found",
+      });
+    }
+
+    const result = await generateBookSummary(book);
+
+    return res.status(200).json({
+      message: result.cached
+        ? "Cached summary fetched successfully"
+        : "Summary generated successfully",
+      bookId: book._id,
+      title: book.title,
+      summary: result.summary,
+      cached: result.cached,
+      generatedAt: book.aiSummaryGeneratedAt,
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(404).json({
+        message: "Book not found",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Failed to generate summary",
+      error: error.message,
+    });
+  }
+};
+
+// ============================================================
 // EXPORTS
 // ============================================================
 
@@ -492,4 +651,8 @@ export {
   deleteBook,
   searchGoogleBooksController,
   importGoogleBook,
+  getBookSummary,
+  getFavoriteBooks,
+  favoriteBook,
+  unfavoriteBook,
 };
