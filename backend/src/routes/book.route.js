@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   getAllBooks,
   searchBooks,
@@ -6,6 +7,8 @@ import {
   createBook,
   updateBook,
   deleteBook,
+  searchGoogleBooksController,
+  importGoogleBook,
 } from "../controllers/book.controller.js";
 
 import verifyJWT from "../middleware/auth.middleware.js";
@@ -14,21 +17,48 @@ import authorizeRoles from "../middleware/role.middleware.js";
 const router = Router();
 
 // Members + librarians
-router.route("/").get(verifyJWT, getAllBooks);
-router.route("/search").get(verifyJWT, searchBooks);
-router.route("/:id").get(verifyJWT, getBookById);
+router.get("/", verifyJWT, getAllBooks);
+
+router.get("/search", verifyJWT, searchBooks);
+
+// Google Books - librarian only
+router.get(
+  "/google/search",
+  verifyJWT,
+  authorizeRoles("librarian"),
+  searchGoogleBooksController
+);
+
+router.post(
+  "/google/import/:googleBooksId",
+  verifyJWT,
+  authorizeRoles("librarian"),
+  importGoogleBook
+);
+
+// Get one book
+router.get("/:id", verifyJWT, getBookById);
 
 // Librarian only
-router
-  .route("/")
-  .post(verifyJWT, authorizeRoles("librarian"), createBook);
+router.post(
+  "/",
+  verifyJWT,
+  authorizeRoles("librarian"),
+  createBook
+);
 
-router
-  .route("/:id")
-  .patch(verifyJWT, authorizeRoles("librarian"), updateBook);
+router.put(
+  "/:id",
+  verifyJWT,
+  authorizeRoles("librarian"),
+  updateBook
+);
 
-router
-  .route("/:id")
-  .delete(verifyJWT, authorizeRoles("librarian"), deleteBook);
+router.delete(
+  "/:id",
+  verifyJWT,
+  authorizeRoles("librarian"),
+  deleteBook
+);
 
 export default router;
