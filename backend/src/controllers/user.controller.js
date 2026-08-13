@@ -36,6 +36,20 @@ const registerUser = async (req, res) => {
       });
     }
 
+    if (userRole === "librarian") {
+      if (!process.env.LIBRARIAN_REGISTER_KEY) {
+        return res.status(500).json({
+          message: "Librarian registration is not configured (missing LIBRARIAN_REGISTER_KEY)",
+        });
+      }
+
+      if (req.body.registerKey !== process.env.LIBRARIAN_REGISTER_KEY) {
+        return res.status(403).json({
+          message: "Invalid librarian registration key",
+        });
+      }
+    }
+
     const existingUser = await User.findOne({
       email: normalizedEmail,
     });
@@ -51,7 +65,7 @@ const registerUser = async (req, res) => {
       email: normalizedEmail,
       password,
       role: userRole,
-      membershipStatus: "pending",
+      membershipStatus: userRole === "librarian" ? "active" : "pending",
     });
 
     const accessToken = generateToken(user._id);
@@ -260,6 +274,178 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const MEMBERSHIP_VALID_STATUSES = [
+  "pending",
+  "active",
+  "suspended",
+  "rejected",
+];
+
+const addOneYear = (from = new Date()) => {
+  const date = new Date(from);
+  date.setFullYear(date.getFullYear() + 1);
+  return date;
+};
+
+// ============================================================
+// LIST USERS (LIBRARIAN)
+// ============================================================
+
+const getAllUsers = async (req, res) => {
+  try {
+    const { role, status, search, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+
+    if (role && ["member", "librarian"].includes(role)) {
+      filter.role = role;
+    }
+
+    if (status && MEMBERSHIP_VALID_STATUSES.includes(status)) {
+      filter.membershipStatus = status;
+    }
+
+    if (search?.trim()) {
+      const regex = {
+        $regex: search.trim(),
+        $options: "i",
+      };
+
+      filter.$or = [{ name: regex }, { email: regex }];
+    }
+
+    const users = await User.find(filter)
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit));
+
+    const total = await User.countDocuments(filter);
+
+    return res.status(200).json({
+      users,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// ============================================================
+// LIST PENDING MEMBERS (LIBRARIAN)
+// ============================================================
+
+const getPendingMembers = async (req, res) => {
+  try {
+    const users = await User.find({
+      role: "member",
+      membershipStatus: "pending",
+    })
+      .select("-password")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({
+      users,
+      total: users.length,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// ============================================================
+// UPDATE MEMBERSHIP STATUS (LIBRARIAN)
+// ============================================================
+
+const updateMembership = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, reason, membershipEndDate } = req.body;
+
+    if (!MEMBERSHIP_VALID_STATUSES.includes(status)) {
+      return res.status(400).json({
+        message: `status must be one of: ${MEMBERSHIP_VALID_STATUSES.join(", ")}`,
+      });
+    }
+
+    if (
+      (status === "rejected" || status === "suspended") &&
+      !reason?.trim()
+    ) {
+      return res.status(400).json({
+        message: `A reason is required when status is ${status}`,
+      });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    user.membershipStatus = status;
+
+    if (status === "active") {
+      user.approvedBy = req.user._id;
+      user.approvedAt = new Date();
+      user.membershipStartDate = user.membershipStartDate || new Date();
+      user.membershipEndDate = membershipEndDate
+        ? new Date(membershipEndDate)
+        : addOneYear();
+      user.rejectionReason = null;
+      user.suspensionReason = null;
+    }
+
+    if (status === "rejected") {
+      user.rejectionReason = reason.trim();
+      user.suspensionReason = null;
+      user.approvedBy = null;
+      user.approvedAt = null;
+    }
+
+    if (status === "suspended") {
+      user.suspensionReason = reason.trim();
+    }
+
+    if (status === "pending") {
+      user.approvedBy = null;
+      user.approvedAt = null;
+      user.membershipStartDate = null;
+      user.membershipEndDate = null;
+      user.rejectionReason = null;
+      user.suspensionReason = null;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Membership updated successfully",
+      user,
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   registerUser,
   loginUser,
@@ -267,4 +453,7 @@ export {
   getProfile,
   forgotPassword,
   resetPassword,
+  getAllUsers,
+  getPendingMembers,
+  updateMembership,
 };
