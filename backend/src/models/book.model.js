@@ -81,6 +81,30 @@ const bookSchema = new mongoose.Schema(
     message: "availableCopies cannot exceed totalCopies",
   },
 },
+
+    aiSummary: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    aiSummaryGeneratedAt: {
+      type: Date,
+      default: null,
+    },
+
+    favoritedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    borrowCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
