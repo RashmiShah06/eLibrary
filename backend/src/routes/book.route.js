@@ -9,6 +9,10 @@ import {
   deleteBook,
   searchGoogleBooksController,
   importGoogleBook,
+  getBookSummary,
+  getFavoriteBooks,
+  favoriteBook,
+  unfavoriteBook,
 } from "../controllers/book.controller.js";
 
 import verifyJWT from "../middleware/auth.middleware.js";
@@ -36,8 +40,18 @@ router.post(
   importGoogleBook
 );
 
+// Favorites (must be declared before /:id)
+router.get("/favorites", verifyJWT, getFavoriteBooks);
+
+router.post("/:id/favorite", verifyJWT, favoriteBook);
+
+router.delete("/:id/favorite", verifyJWT, unfavoriteBook);
+
 // Get one book
 router.get("/:id", verifyJWT, getBookById);
+
+// AI-powered summary
+router.get("/:id/summary", verifyJWT, getBookSummary);
 
 // Librarian only
 router.post(
