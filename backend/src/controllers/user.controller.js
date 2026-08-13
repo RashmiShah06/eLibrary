@@ -5,7 +5,7 @@ import { sendEmail } from "../utils/mail.js";
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name?.trim() || !email?.trim() || !password?.trim()) {
       return res.status(400).json({
@@ -27,6 +27,15 @@ const registerUser = async (req, res) => {
       });
     }
 
+    // Only allow these two roles
+    const userRole = role || "member";
+
+    if (!["member", "librarian"].includes(userRole)) {
+      return res.status(400).json({
+        message: "Invalid role",
+      });
+    }
+
     const existingUser = await User.findOne({
       email: normalizedEmail,
     });
@@ -41,7 +50,7 @@ const registerUser = async (req, res) => {
       name: name.trim(),
       email: normalizedEmail,
       password,
-      role: "member",
+      role: userRole,
       membershipStatus: "pending",
     });
 
