@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Library Test Console</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --green: #16a34a;
+    --orange: #d97706;
+    --red: #dc2626;
+    --gray: #64748b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  header .brand { font-size: 20px; font-weight: 700; }
+  header .brand span { opacity: 0.85; font-weight: 400; font-size: 13px; }
+  #authStatus { display: flex; align-items: center; gap: 12px; font-size: 13px; flex-wrap: wrap; }
+
+  .chip {
+    background: rgba(255,255,255,0.18);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  nav {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  nav button.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .card h3 { margin: 0 0 12px; font-size: 15px; }
+  .card h4 { margin: 14px 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 8px 0 4px; }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+
+  textarea { resize: vertical; min-height: 60px; }
+
+  button.btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.btn:hover { background: var(--primary-dark); }
+  button.btn.small { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+  button.btn.ghost { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+  button.btn.ghost:hover { background: #eff6ff; }
+  button.btn.danger { background: var(--red); }
+  button.btn.danger:hover { background: #b91c1c; }
+  button.btn.warn { background: var(--orange); }
+  button.btn.success { background: var(--green); }
+  button.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  .row > .grow { flex: 2; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  tr:hover td { background: #f8fafc; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .badge.green { background: #dcfce7; color: #166534; }
+  .badge.orange { background: #fef3c7; color: #92400e; }
+  .badge.red { background: #fee2e2; color: #991b1b; }
+  .badge.gray { background: #e2e8f0; color: #475569; }
+  .badge.blue { background: #dbeafe; color: #1e40af; }
+
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    max-width: 420px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .25s ease;
+    pointer-events: none;
+    z-index: 50;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.ok { background: var(--green); }
+  #toast.err { background: var(--red); }
+  #toast.info { background: var(--primary); }
+
+  .muted { color: var(--muted); font-size: 12px; }
+  .small { font-size: 12px; }
+  code { background: #f1f5f9; padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+  .token-box { word-break: break-all; background: #f8fafc; border: 1px dashed var(--border); padding: 8px; border-radius: 8px; font-size: 12px; margin: 8px 0; }
+
+  .empty { text-align: center; color: var(--muted); padding: 24px; }
+  .detail-cover { max-width: 140px; border-radius: 8px; border: 1px solid var(--border); }
+  .desc { font-size: 13px; line-height: 1.5; color: #334155; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 640px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  }
+  .modal-box h3 { margin: 0; font-size: 16px; }
+  .summary-body { font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">E-Library Test Console <span>| backend test UI</span></div>
+  <div id="authStatus"></div>
+</header>
+
+<nav id="tabs">
+  <button data-tab="auth" class="active">Auth</button>
+  <button data-tab="books">Books</button>
+  <button data-tab="google">Google Books</button>
+  <button data-tab="borrow">Borrowing</button>
+  <button data-tab="reservations">Reservations</button>
+  <button data-tab="members">Members</button>
+</nav>
+
+<main>
+  <!-- ==================== AUTH ==================== -->
+  <section class="tab active" id="tab-auth">
+    <div class="grid">
+      <div class="card">
+        <h3>Register</h3>
+        <label>Name</label><input id="regName" placeholder="John Doe">
+        <label>Email</label><input id="regEmail" placeholder="user@example.com">
+        <label>Password</label><input id="regPassword" type="password" placeholder="min 6 characters">
+        <label>Role</label>
+        <select id="regRole" onchange="toggleRegKey()">
+          <option value="member">member</option>
+          <option value="librarian">librarian</option>
+        </select>
+        <div id="regKeyRow" style="display:none">
+          <label>Librarian Key</label><input id="regKey" type="password" placeholder="required to register as librarian">
+        </div>
+        <div style="height:12px"></div>
+        <button class="btn" onclick="doRegister()">Register</button>
+      </div>
+
+      <div class="card">
+        <h3>Login</h3>
+        <label>Email</label><input id="loginEmail" placeholder="user@example.com">
+        <label>Password</label><input id="loginPassword" type="password">
+        <div style="height:12px"></div>
+        <button class="btn" onclick="doLogin()">Login</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Forgot Password</h3>
+        <p class="muted">The reset token is emailed (requires Gmail config). You can also call the reset endpoint below with the token.</p>
+        <label>Email</label><input id="forgotEmail" placeholder="user@example.com">
+        <div style="height:12px"></div>
+        <button class="btn ghost" onclick="doForgot()">Send reset link</button>
+      </div>
+
+      <div class="card">
+        <h3>Reset Password</h3>
+        <label>Token</label><input id="resetToken" placeholder="paste reset token from email">
+        <label>New Password</label><input id="resetPassword" type="password" placeholder="min 6 characters">
+        <div style="height:12px"></div>
+        <button class="btn ghost" onclick="doReset()">Reset password</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Session</h3>
+      <div id="profileBox" class="empty">Log in to see your profile.</div>
+    </div>
+  </section>
+
+  <!-- ==================== BOOKS ==================== -->
+  <section class="tab" id="tab-books">
+    <div class="card" id="createBookCard" style="display:none">
+      <h3>Create Book (librarian)</h3>
+      <div class="grid">
+        <div>
+          <label>Title *</label><input id="bkTitle" placeholder="Book title">
+          <label>Authors * (comma separated)</label><input id="bkAuthors" placeholder="Author A, Author B">
+          <label>Description</label><textarea id="bkDescription"></textarea>
+        </div>
+        <div>
+          <label>Categories (comma separated)</label><input id="bkCategories" placeholder="Programming, Computers">
+          <label>Publisher</label><input id="bkPublisher" placeholder="O'Reilly">
+          <label>Published Date</label><input id="bkPublishedDate" placeholder="2018-05-01">
+          <label>Total Copies *</label><input id="bkTotalCopies" type="number" value="1" min="1">
+          <div style="height:12px"></div>
+          <button class="btn" onclick="createBook()">Create Book</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Browse / Search Catalogue</h3>
+      <div class="row">
+        <div class="grow"><label>Search</label><input id="bkSearch" placeholder="search title, author, category, description"></div>
+        <div><label>Category</label><input id="bkCategory" placeholder="e.g. Programming"></div>
+        <div><label>Sort</label>
+          <select id="bkSort">
+            <option value="">default</option>
+            <option value="popular">Most Read</option>
+            <option value="title">Title A-Z</option>
+            <option value="newest">Newest</option>
+          </select>
+        </div>
+        <div><label>Page</label><input id="bkPage" type="number" value="1" min="1"></div>
+        <div style="flex:0"><button class="btn" onclick="searchBooks()">Search</button></div>
+        <div style="flex:0"><button class="btn ghost" onclick="loadBooks()">All Books</button></div>
+        <div style="flex:0"><button class="btn ghost" onclick="loadFavorites()">My Favorites</button></div>
+      </div>
+      <div id="booksTable" class="empty" style="margin-top:12px">Loading…</div>
+    </div>
+
+    <div id="bookDetail" style="display:none"></div>
+  </section>
+
+  <!-- ==================== GOOGLE BOOKS ==================== -->
+  <section class="tab" id="tab-google">
+    <div class="card">
+      <h3>Google Books (librarian only)</h3>
+      <div class="row">
+        <div class="grow"><label>Query</label><input id="ggQuery" placeholder="e.g. clean code"></div>
+        <div style="flex:0"><button class="btn" onclick="googleSearch()">Search Google</button></div>
+      </div>
+      <div id="googleResults" class="empty" style="margin-top:12px">Run a search to find external books.</div>
+    </div>
+  </section>
+
+  <!-- ==================== BORROW ==================== -->
+  <section class="tab" id="tab-borrow">
+    <div class="card">
+      <h3>Borrowing</h3>
+      <div class="row">
+        <div style="flex:0"><button class="btn" onclick="loadMyBorrows()">My Borrow Records</button></div>
+        <div id="adminBorrowToggle" style="flex:0; display:none"><button class="btn ghost" onclick="loadAllBorrows()">All Records (librarian)</button></div>
+      </div>
+      <div id="borrowTable" class="empty" style="margin-top:12px">Load your borrow records.</div>
+    </div>
+  </section>
+
+  <!-- ==================== RESERVATIONS ==================== -->
+  <section class="tab" id="tab-reservations">
+    <div class="card">
+      <h3>Reservations</h3>
+      <div class="row">
+        <div style="flex:0"><button class="btn" onclick="loadMyReservations()">My Reservations</button></div>
+        <div id="adminReserveToggle" style="flex:0; display:none"><button class="btn ghost" onclick="loadAllReservations()">All Reservations (librarian)</button></div>
+      </div>
+      <div id="reservationTable" class="empty" style="margin-top:12px">Load your reservations.</div>
+    </div>
+  </section>
+
+  <!-- ==================== MEMBERS ==================== -->
+  <section class="tab" id="tab-members">
+    <div id="membersCard">
+      <div class="card">
+        <h3>Pending Approvals (librarian)</h3>
+        <div id="pendingTable" class="empty">Load pending members.</div>
+        <div style="height:8px"></div>
+        <button class="btn" onclick="loadPending()">Refresh</button>
+      </div>
+
+      <div class="card">
+        <h3>All Users (librarian)</h3>
+        <div class="row">
+          <div><label>Status</label>
+            <select id="usrStatus">
+              <option value="">all</option>
+              <option value="pending">pending</option>
+              <option value="active">active</option>
+              <option value="suspended">suspended</option>
+              <option value="rejected">rejected</option>
+            </select>
+          </div>
+          <div><label>Role</label>
+            <select id="usrRole">
+              <option value="">all</option>
+              <option value="member">member</option>
+              <option value="librarian">librarian</option>
+            </select>
+          </div>
+          <div><label>Search</label><input id="usrSearch" placeholder="name or email"></div>
+          <div style="flex:0"><button class="btn" onclick="loadUsers()">Apply</button></div>
+        </div>
+        <div id="usersTable" class="empty" style="margin-top:12px">Apply filters to list users.</div>
+      </div>
+    </div>
+    <div id="membersNoAccess" class="card" style="display:none">
+      <h3>Librarian access required</h3>
+      <p class="muted">Log in with a librarian account to manage members.</p>
+    </div>
+  </section>
+</main>
+
+<div id="summaryModal" class="modal-overlay" onclick="closeSummary()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="row" style="justify-content:space-between; align-items:flex-start; flex-wrap:nowrap">
+      <h3 id="summaryTitle">AI Summary</h3>
+      <button class="btn small ghost" onclick="closeSummary()">Close</button>
+    </div>
+    <div id="summaryMeta" class="muted" style="margin:4px 0 10px"></div>
+    <p id="summaryText" class="summary-body"></p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+const API = "";
+const state = {
+  token: localStorage.getItem("elib_token") || "",
+  user: JSON.parse(localStorage.getItem("elib_user") || "null"),
+};
+
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
+
+function esc(v) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+let toastTimer;
+function toast(text, type = "ok") {
+  const el = document.getElementById("toast");
+  el.textContent = text;
+  el.className = "show " + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (el.className = ""), 4000);
+}
+
+async function api(method, path, body) {
+  const headers = { "Content-Type": "application/json" };
+  if (state.token) headers["Authorization"] = "Bearer " + state.token;
+  let res;
+  try {
+    res = await fetch(API + path, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    return { ok: false, status: 0, data: { message: "Network error: " + e.message } };
+  }
+  let data = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok && !data) data = { message: res.statusText };
+  return { ok: res.ok, status: res.status, data };
+}
+
+function badge(status) {
+  const map = {
+    active: "green", pending: "orange", suspended: "red", rejected: "red",
+    returned: "gray", overdue: "red", fulfilled: "green", cancelled: "gray",
+    member: "blue", librarian: "orange",
+  };
+  return `<span class="badge ${map[status] || "gray"}">${esc(status)}</span>`;
+}
+
+function fmtDate(d) {
+  if (!d) return "—";
+  const date = new Date(d);
+  if (isNaN(date)) return "—";
+  return date.toLocaleString();
+}
+
+function authorsList(authors) {
+  return (authors || []).join(", ");
+}
+
+function isLibrarian() {
+  return state.user && state.user.role === "librarian";
+}
+
+// ------------------------------------------------------------
+// Session UI
+// ------------------------------------------------------------
+
+function saveSession() {
+  if (state.token) localStorage.setItem("elib_token", state.token);
+  else localStorage.removeItem("elib_token");
+  if (state.user) localStorage.setItem("elib_user", JSON.stringify(state.user));
+  else localStorage.removeItem("elib_user");
+}
+
+function renderAuthStatus() {
+  const el = document.getElementById("authStatus");
+  if (state.user) {
+    el.innerHTML = `
+      <span class="chip">${esc(state.user.name)} · ${esc(state.user.email)}</span>
+      <span class="chip">${badge(state.user.role)} ${badge(state.user.membershipStatus)}</span>
+      <button class="btn small danger" onclick="logout()">Logout</button>`;
+  } else {
+    el.innerHTML = `<span class="chip">Not logged in</span>`;
+  }
+  document.getElementById("createBookCard").style.display = isLibrarian() ? "" : "none";
+  document.getElementById("adminBorrowToggle").style.display = isLibrarian() ? "" : "none";
+  document.getElementById("adminReserveToggle").style.display = isLibrarian() ? "" : "none";
+}
+
+function logout() {
+  state.token = "";
+  state.user = null;
+  saveSession();
+  renderAuthStatus();
+  renderProfile();
+  toast("Logged out", "info");
+}
+
+function renderProfile() {
+  const box = document.getElementById("profileBox");
+  if (!state.user) {
+    box.innerHTML = `<div class="empty">Log in to see your profile.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="row">
+      <div>
+        <p><strong>Name:</strong> ${esc(state.user.name)}</p>
+        <p><strong>Email:</strong> ${esc(state.user.email)}</p>
+        <p><strong>Role:</strong> ${esc(state.user.role)}</p>
+        <p><strong>Membership:</strong> ${badge(state.user.membershipStatus)}</p>
+        <p><strong>Start:</strong> ${fmtDate(state.user.membershipStartDate)}</p>
+        <p><strong>End:</strong> ${fmtDate(state.user.membershipEndDate)}</p>
+      </div>
+      <div style="flex:1">
+        <label>Access Token</label>
+        <div class="token-box" id="tokenBox">${esc(state.token)}</div>
+        <button class="btn small ghost" onclick="copyToken()">Copy token</button>
+      </div>
+    </div>`;
+}
+
+function copyToken() {
+  const box = document.getElementById("tokenBox");
+  if (!box) return;
+  navigator.clipboard.writeText(box.textContent)
+    .then(() => toast("Token copied", "info"))
+    .catch(() => toast("Could not copy", "err"));
+}
+
+// ------------------------------------------------------------
+// Auth actions
+// ------------------------------------------------------------
+
+function toggleRegKey() {
+  document.getElementById("regKeyRow").style.display =
+    document.getElementById("regRole").value === "librarian" ? "block" : "none";
+}
+
+async function doRegister() {
+  const body = {
+    name: document.getElementById("regName").value.trim(),
+    email: document.getElementById("regEmail").value.trim(),
+    password: document.getElementById("regPassword").value,
+    role: document.getElementById("regRole").value,
+  };
+  if (body.role === "librarian") {
+    body.registerKey = document.getElementById("regKey").value;
+  }
+  const r = await api("POST", "/api/users/register", body);
+  if (!r.ok) return toast(r.data?.message || "Register failed", "err");
+  state.token = r.data.accessToken;
+  state.user = r.data.user;
+  saveSession();
+  renderAuthStatus();
+  renderProfile();
+  toast("Registered successfully (membership: " + state.user.membershipStatus + ")", "ok");
+}
+
+async function doLogin() {
+  const body = {
+    email: document.getElementById("loginEmail").value.trim(),
+    password: document.getElementById("loginPassword").value,
+  };
+  const r = await api("POST", "/api/users/login", body);
+  if (!r.ok) return toast(r.data?.message || "Login failed", "err");
+  state.token = r.data.accessToken;
+  state.user = r.data.user;
+  saveSession();
+  renderAuthStatus();
+  renderProfile();
+  toast("Logged in as " + state.user.name, "ok");
+}
+
+async function doForgot() {
+  const r = await api("POST", "/api/users/forgot-password", {
+    email: document.getElementById("forgotEmail").value.trim(),
+  });
+  if (!r.ok) return toast(r.data?.message || "Request failed", "err");
+  toast(r.data?.message || "Reset link sent", "ok");
+}
+
+async function doReset() {
+  const token = document.getElementById("resetToken").value.trim();
+  const password = document.getElementById("resetPassword").value;
+  const r = await api("POST", "/api/users/reset-password/" + encodeURIComponent(token), { password });
+  if (!r.ok) return toast(r.data?.message || "Reset failed", "err");
+  toast(r.data?.message || "Password reset", "ok");
+}
+
+// ------------------------------------------------------------
+// Tabs
+// ------------------------------------------------------------
+
+function showTab(name) {
+  document.querySelectorAll("nav button").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === name)
+  );
+  document.querySelectorAll("section.tab").forEach((s) =>
+    s.classList.toggle("active", s.id === "tab-" + name)
+  );
+  if (name === "books") loadBooks();
+  if (name === "members") loadPending();
+}
+
+document.querySelectorAll("nav button").forEach((b) =>
+  b.addEventListener("click", () => showTab(b.dataset.tab))
+);
+
+// ------------------------------------------------------------
+// Books
+// ------------------------------------------------------------
+
+async function loadBooks() {
+  const page = document.getElementById("bkPage").value || 1;
+  const cat = document.getElementById("bkCategory").value.trim();
+  const sort = document.getElementById("bkSort").value;
+  const qs = new URLSearchParams({ page });
+  if (cat) qs.set("category", cat);
+  if (sort) qs.set("sort", sort);
+  await fetchBooks("/api/books?" + qs.toString());
+}
+
+async function searchBooks() {
+  const q = document.getElementById("bkSearch").value.trim();
+  const cat = document.getElementById("bkCategory").value.trim();
+  const sort = document.getElementById("bkSort").value;
+  const page = document.getElementById("bkPage").value || 1;
+  const qs = new URLSearchParams({ q, page });
+  if (cat) qs.set("category", cat);
+  if (sort) qs.set("sort", sort);
+  await fetchBooks("/api/books/search?" + qs.toString());
+}
+
+async function loadFavorites() {
+  await fetchBooks("/api/books/favorites");
+}
+
+async function fetchBooks(path) {
+  const box = document.getElementById("booksTable");
+  box.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await api("GET", path);
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Failed to load books")}</div>`;
+    return;
+  }
+  const books = r.data.books || [];
+  if (!books.length) {
+    box.innerHTML = `<div class="empty">No books found.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Title</th><th>Authors</th><th>Category</th><th>Copies</th><th>Reads</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${books.map((b) => `
+          <tr>
+            <td><strong>${esc(b.title)}</strong>${b.googleBooksId ? ' <span class="muted">· google</span>' : ""}</td>
+            <td>${esc(authorsList(b.authors))}</td>
+            <td>${esc(authorsList(b.categories)) || "—"}</td>
+            <td>${b.availableCopies} / ${b.totalCopies}</td>
+            <td>${b.borrowCount || 0}</td>
+            <td style="white-space:nowrap">
+              <button class="btn small ${b.favorited ? "warn" : "ghost"}" onclick="toggleFavorite('${b._id}', ${b.favorited})">${b.favorited ? "★" : "☆"}</button>
+              <button class="btn small ghost" onclick="showBook('${b._id}')">View</button>
+              <button class="btn small ghost" onclick="getSummary('${b._id}')">Summary</button>
+              <button class="btn small success" onclick="borrowBook('${b._id}')">Borrow</button>
+              <button class="btn small warn" onclick="reserveBook('${b._id}')">Reserve</button>
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="muted" style="margin-top:8px">Showing ${books.length} of ${r.data.total} · page ${r.data.page}</div>`;
+}
+
+async function toggleFavorite(id, isFav) {
+  const r = await api(isFav ? "DELETE" : "POST", "/api/books/" + id + "/favorite");
+  if (!r.ok) return toast(r.data?.message || "Could not update favorite", "err");
+  toast(isFav ? "Removed from favorites" : "Added to favorites", "ok");
+  const q = document.getElementById("bkSearch").value.trim();
+  if (q) searchBooks();
+  else loadBooks();
+}
+
+async function showBook(id) {
+  const r = await api("GET", "/api/books/" + id);
+  const box = document.getElementById("bookDetail");
+  if (!r.ok) {
+    box.style.display = "block";
+    box.innerHTML = `<div class="card"><div class="empty">${esc(r.data?.message || "Book not found")}</div></div>`;
+    return;
+  }
+  const b = r.data.book;
+  box.style.display = "block";
+  box.innerHTML = `
+    <div class="card">
+      <h3>Book Detail</h3>
+      <div class="row">
+        <div style="flex:0">
+          ${b.coverImage ? `<img class="detail-cover" src="${esc(b.coverImage)}" alt="cover">` : `<div class="detail-cover" style="background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8">no cover</div>`}
+        </div>
+        <div style="flex:2">
+          <h3 style="margin-top:0">${esc(b.title)}</h3>
+          <p class="muted">by ${esc(authorsList(b.authors))}</p>
+          <p class="desc">${esc(b.description) || "No description."}</p>
+          <p class="small">
+            ${b.categories?.length ? "Categories: " + esc(authorsList(b.categories)) + "<br>" : ""}
+            ${b.publisher ? "Publisher: " + esc(b.publisher) + "<br>" : ""}
+            ${b.publishedDate ? "Published: " + esc(b.publishedDate) + "<br>" : ""}
+            ${b.language ? "Language: " + esc(b.language) + "<br>" : ""}
+            ${b.pageCount ? "Pages: " + esc(b.pageCount) + "<br>" : ""}
+            ${b.googleBooksId ? "Google ID: " + esc(b.googleBooksId) : ""}
+          </p>
+          <p><strong>Copies:</strong> ${b.availableCopies} available / ${b.totalCopies} total</p>
+          ${isLibrarian() ? `
+            <button class="btn small success" onclick="borrowBook('${b._id}')">Borrow</button>
+            <button class="btn small danger" onclick="deleteBook('${b._id}')">Delete</button>` : ""}
+        </div>
+      </div>
+      ${isLibrarian() ? `
+      <h4>Update Book (librarian)</h4>
+      <div class="grid">
+        <div>
+          <label>Title</label><input id="updTitle" value="${esc(b.title)}">
+          <label>Authors</label><input id="updAuthors" value="${esc(authorsList(b.authors))}">
+          <label>Description</label><textarea id="updDescription">${esc(b.description || "")}</textarea>
+          <label>Categories</label><input id="updCategories" value="${esc(authorsList(b.categories))}">
+        </div>
+        <div>
+          <label>Publisher</label><input id="updPublisher" value="${esc(b.publisher || "")}">
+          <label>Published Date</label><input id="updPublishedDate" value="${esc(b.publishedDate || "")}">
+          <label>Total Copies</label><input id="updTotalCopies" type="number" min="1" value="${b.totalCopies}">
+          <label>Available Copies</label><input id="updAvailableCopies" type="number" min="0" value="${b.availableCopies}">
+          <div style="height:12px"></div>
+          <button class="btn" onclick="updateBook('${b._id}')">Save Changes</button>
+        </div>
+      </div>` : ""}
+    </div>`;
+}
+
+async function createBook() {
+  const authors = document.getElementById("bkAuthors").value.split(",").map(s => s.trim()).filter(Boolean);
+  const categories = document.getElementById("bkCategories").value.split(",").map(s => s.trim()).filter(Boolean);
+  const body = {
+    title: document.getElementById("bkTitle").value.trim(),
+    authors,
+    description: document.getElementById("bkDescription").value.trim(),
+    categories,
+    publisher: document.getElementById("bkPublisher").value.trim(),
+    publishedDate: document.getElementById("bkPublishedDate").value.trim(),
+    totalCopies: Number(document.getElementById("bkTotalCopies").value),
+  };
+  const r = await api("POST", "/api/books", body);
+  if (!r.ok) return toast(r.data?.message || "Create failed", "err");
+  toast("Book created: " + r.data.book.title, "ok");
+  loadBooks();
+}
+
+async function updateBook(id) {
+  const body = {
+    title: document.getElementById("updTitle").value.trim(),
+    authors: document.getElementById("updAuthors").value.split(",").map(s => s.trim()).filter(Boolean),
+    description: document.getElementById("updDescription").value.trim(),
+    categories: document.getElementById("updCategories").value.split(",").map(s => s.trim()).filter(Boolean),
+    publisher: document.getElementById("updPublisher").value.trim(),
+    publishedDate: document.getElementById("updPublishedDate").value.trim(),
+    totalCopies: Number(document.getElementById("updTotalCopies").value),
+    availableCopies: Number(document.getElementById("updAvailableCopies").value),
+  };
+  const r = await api("PUT", "/api/books/" + id, body);
+  if (!r.ok) return toast(r.data?.message || "Update failed", "err");
+  toast("Book updated", "ok");
+  showBook(id);
+  loadBooks();
+}
+
+async function deleteBook(id) {
+  if (!confirm("Delete this book?")) return;
+  const r = await api("DELETE", "/api/books/" + id);
+  if (!r.ok) return toast(r.data?.message || "Delete failed", "err");
+  toast("Book deleted", "ok");
+  document.getElementById("bookDetail").style.display = "none";
+  loadBooks();
+}
+
+async function getSummary(id) {
+  toast("Generating summary…", "info");
+  const r = await api("GET", "/api/books/" + id + "/summary");
+  if (!r.ok) return toast(r.data?.message || "Summary failed", "err");
+  toast(r.data.cached ? "Summary served from cache" : "Summary generated", r.data.cached ? "info" : "ok");
+  document.getElementById("summaryTitle").textContent = "AI Summary — " + r.data.title;
+  document.getElementById("summaryMeta").textContent =
+    (r.data.cached ? "Cached" : "Generated") + " · " + fmtDate(r.data.generatedAt);
+  document.getElementById("summaryText").textContent = r.data.summary;
+  document.getElementById("summaryModal").classList.add("show");
+}
+
+function closeSummary() {
+  document.getElementById("summaryModal").classList.remove("show");
+}
+
+// ------------------------------------------------------------
+// Google Books
+// ------------------------------------------------------------
+
+async function googleSearch() {
+  const q = document.getElementById("ggQuery").value.trim();
+  if (!q) return toast("Enter a query", "err");
+  const box = document.getElementById("googleResults");
+  box.innerHTML = `<div class="empty">Searching…</div>`;
+  const r = await api("GET", "/api/books/google/search?q=" + encodeURIComponent(q));
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Search failed")}</div>`;
+    return;
+  }
+  const items = r.data.books || [];
+  if (!items.length) {
+    box.innerHTML = `<div class="empty">No results from Google Books.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Cover</th><th>Title / Authors</th><th>Publisher</th><th>Import</th></tr></thead>
+      <tbody>
+        ${items.map((it) => {
+          const v = it.volumeInfo || {};
+          return `
+          <tr>
+            <td>${v.imageLinks?.thumbnail ? `<img src="${esc(v.imageLinks.thumbnail)}" style="max-width:60px;border-radius:6px">` : "—"}</td>
+            <td>
+              <strong>${esc(v.title || "(untitled)")}</strong><br>
+              <span class="muted">${esc((v.authors || []).join(", "))}</span>
+            </td>
+            <td>${esc(v.publisher || "—")}</td>
+            <td style="white-space:nowrap">
+              <input id="copies_${esc(it.id)}" type="number" min="1" value="1" style="width:70px;display:inline-block">
+              <button class="btn small success" onclick="googleImport('${esc(it.id)}')">Import</button>
+            </td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function googleImport(id) {
+  const copies = Number(document.getElementById("copies_" + id)?.value || 1);
+  const r = await api("POST", "/api/books/google/import/" + encodeURIComponent(id), { totalCopies: copies });
+  if (!r.ok) return toast(r.data?.message || "Import failed", "err");
+  toast("Imported: " + r.data.book.title, "ok");
+}
+
+// ------------------------------------------------------------
+// Borrowing
+// ------------------------------------------------------------
+
+async function borrowBook(id) {
+  const r = await api("POST", "/api/borrow/" + id);
+  if (!r.ok) return toast(r.data?.message || "Borrow failed", "err");
+  toast("Borrowed! Due " + fmtDate(r.data.borrow.dueDate), "ok");
+  loadBooks();
+}
+
+async function returnBook(id) {
+  const r = await api("POST", "/api/borrow/" + id + "/return");
+  if (!r.ok) return toast(r.data?.message || "Return failed", "err");
+  toast("Returned (fine: " + (r.data.borrow.fine || 0) + ")", "ok");
+  loadMyBorrows();
+}
+
+async function loadMyBorrows() {
+  const box = document.getElementById("borrowTable");
+  box.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await api("GET", "/api/borrow/my");
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Failed")}</div>`;
+    return;
+  }
+  const records = r.data.records || [];
+  if (!records.length) {
+    box.innerHTML = `<div class="empty">No borrow records yet.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Book</th><th>Borrowed</th><th>Due</th><th>Returned</th><th>Status</th><th>Fine</th><th></th></tr></thead>
+      <tbody>
+        ${records.map((rec) => `
+          <tr>
+            <td>${esc(rec.bookId?.title || "(deleted book)")}<br><span class="muted">${esc(authorsList(rec.bookId?.authors))}</span></td>
+            <td>${fmtDate(rec.borrowedAt)}</td>
+            <td>${fmtDate(rec.dueDate)}</td>
+            <td>${fmtDate(rec.returnedAt)}</td>
+            <td>${badge(rec.status)}</td>
+            <td>${rec.fine || 0}</td>
+            <td>${(rec.status === "active" || rec.status === "overdue") ? `<button class="btn small success" onclick="returnBook('${rec.bookId?._id}')">Return</button>` : ""}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function loadAllBorrows() {
+  const box = document.getElementById("borrowTable");
+  box.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await api("GET", "/api/borrow");
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Failed")}</div>`;
+    return;
+  }
+  const records = r.data.records || [];
+  if (!records.length) {
+    box.innerHTML = `<div class="empty">No borrow records.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Member</th><th>Book</th><th>Borrowed</th><th>Due</th><th>Status</th><th>Fine</th></tr></thead>
+      <tbody>
+        ${records.map((rec) => `
+          <tr>
+            <td>${esc(rec.userId?.name || "(deleted)")}<br><span class="muted">${esc(rec.userId?.email || "")}</span></td>
+            <td>${esc(rec.bookId?.title || "(deleted book)")}</td>
+            <td>${fmtDate(rec.borrowedAt)}</td>
+            <td>${fmtDate(rec.dueDate)}</td>
+            <td>${badge(rec.status)}</td>
+            <td>${rec.fine || 0}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+// ------------------------------------------------------------
+// Reservations
+// ------------------------------------------------------------
+
+async function reserveBook(id) {
+  const r = await api("POST", "/api/reservations/" + id);
+  if (!r.ok) return toast(r.data?.message || "Reserve failed", "err");
+  toast("Reserved successfully", "ok");
+  loadBooks();
+}
+
+async function cancelReservation(id) {
+  const r = await api("DELETE", "/api/reservations/" + id);
+  if (!r.ok) return toast(r.data?.message || "Cancel failed", "err");
+  toast("Reservation cancelled", "ok");
+  loadMyReservations();
+}
+
+async function loadMyReservations() {
+  const box = document.getElementById("reservationTable");
+  box.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await api("GET", "/api/reservations/my");
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Failed")}</div>`;
+    return;
+  }
+  const reservations = r.data.reservations || [];
+  if (!reservations.length) {
+    box.innerHTML = `<div class="empty">No reservations yet.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Book</th><th>Reserved</th><th>Status</th><th>Fulfilled</th><th></th></tr></thead>
+      <tbody>
+        ${reservations.map((res) => `
+          <tr>
+            <td>${esc(res.bookId?.title || "(deleted book)")}</td>
+            <td>${fmtDate(res.reservedAt)}</td>
+            <td>${badge(res.status)}</td>
+            <td>${fmtDate(res.fulfilledAt)}</td>
+            <td>${res.status === "active" ? `<button class="btn small warn" onclick="cancelReservation('${res._id}')">Cancel</button>` : ""}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function loadAllReservations() {
+  const box = document.getElementById("reservationTable");
+  box.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await api("GET", "/api/reservations");
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Failed")}</div>`;
+    return;
+  }
+  const reservations = r.data.reservations || [];
+  if (!reservations.length) {
+    box.innerHTML = `<div class="empty">No reservations.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Member</th><th>Book</th><th>Reserved</th><th>Status</th></tr></thead>
+      <tbody>
+        ${reservations.map((res) => `
+          <tr>
+            <td>${esc(res.userId?.name || "(deleted)")}<br><span class="muted">${esc(res.userId?.email || "")}</span></td>
+            <td>${esc(res.bookId?.title || "(deleted book)")}</td>
+            <td>${fmtDate(res.reservedAt)}</td>
+            <td>${badge(res.status)}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+// ------------------------------------------------------------
+// Members (librarian)
+// ------------------------------------------------------------
+
+async function loadPending() {
+  const access = document.getElementById("membersNoAccess");
+  const card = document.getElementById("membersCard");
+  if (!isLibrarian()) {
+    access.style.display = "";
+    card.style.display = "none";
+    return;
+  }
+  access.style.display = "none";
+  card.style.display = "";
+  const box = document.getElementById("pendingTable");
+  box.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await api("GET", "/api/users/pending");
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Failed")}</div>`;
+    return;
+  }
+  const users = r.data.users || [];
+  if (!users.length) {
+    box.innerHTML = `<div class="empty">No pending members.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Registered</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${users.map((u) => `
+          <tr>
+            <td>${esc(u.name)}</td>
+            <td>${esc(u.email)}</td>
+            <td>${fmtDate(u.createdAt)}</td>
+            <td style="white-space:nowrap">
+              <button class="btn small success" onclick="setMembership('${u._id}', 'active')">Approve</button>
+              <button class="btn small danger" onclick="rejectMember('${u._id}')">Reject</button>
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+function rejectMember(id) {
+  const reason = prompt("Rejection reason:");
+  if (reason === null) return;
+  setMembership(id, "rejected", reason || "Rejected by librarian");
+}
+
+async function setMembership(id, status, reason) {
+  const body = { status };
+  if (reason) body.reason = reason;
+  const r = await api("PATCH", "/api/users/" + id + "/membership", body);
+  if (!r.ok) return toast(r.data?.message || "Update failed", "err");
+  toast("Membership → " + status, "ok");
+  loadPending();
+  loadUsers();
+}
+
+async function loadUsers() {
+  const qs = new URLSearchParams();
+  const status = document.getElementById("usrStatus").value;
+  const role = document.getElementById("usrRole").value;
+  const search = document.getElementById("usrSearch").value.trim();
+  if (status) qs.set("status", status);
+  if (role) qs.set("role", role);
+  if (search) qs.set("search", search);
+  const box = document.getElementById("usersTable");
+  box.innerHTML = `<div class="empty">Loading…</div>`;
+  const r = await api("GET", "/api/users?" + qs.toString());
+  if (!r.ok) {
+    box.innerHTML = `<div class="empty">${esc(r.data?.message || "Failed")}</div>`;
+    return;
+  }
+  const users = r.data.users || [];
+  if (!users.length) {
+    box.innerHTML = `<div class="empty">No users match.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Membership End</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${users.map((u) => `
+          <tr>
+            <td>${esc(u.name)}</td>
+            <td>${esc(u.email)}</td>
+            <td>${badge(u.role)}</td>
+            <td>${badge(u.membershipStatus)}</td>
+            <td>${fmtDate(u.membershipEndDate)}</td>
+            <td style="white-space:nowrap">
+              ${u.membershipStatus !== "active" ? `<button class="btn small success" onclick="setMembership('${u._id}', 'active')">Activate</button>` : `<button class="btn small warn" onclick="suspendMember('${u._id}')">Suspend</button>`}
+              ${u.membershipStatus !== "pending" ? `<button class="btn small ghost" onclick="setMembership('${u._id}', 'pending')">Reset</button>` : ""}
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+function suspendMember(id) {
+  const reason = prompt("Suspension reason:");
+  if (reason === null) return;
+  setMembership(id, "suspended", reason || "Suspended by librarian");
+}
+
+// ------------------------------------------------------------
+// Init
+// ------------------------------------------------------------
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeSummary();
+});
+
+renderAuthStatus();
+renderProfile();
+</script>
+</body>
+</html>
