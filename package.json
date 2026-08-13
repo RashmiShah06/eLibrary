@@ -1,0 +1,25 @@
+{
+  "name": "elibrary",
+  "version": "1.0.0",
+  "description": "This is a e-library management system",
+  "homepage": "https://github.com/RashmiShah06/eLibrary#readme",
+  "bugs": {
+    "url": "https://github.com/RashmiShah06/eLibrary/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RashmiShah06/eLibrary.git"
+  },
+  "license": "ISC",
+  "author": "Rashmi Shah",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongoose": "^9.9.2"
+  }
+}
