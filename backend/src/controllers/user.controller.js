@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { generateToken } from "../utils/tokens.js";
-import User from "../models/User.model.js";
+import User from "../models/user.model.js";
 import { sendEmail } from "../utils/mail.js";
 
 const registerUser = async (req, res) => {
@@ -14,6 +14,18 @@ const registerUser = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Invalid email format",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters",
+      });
+    }
 
     const existingUser = await User.findOne({
       email: normalizedEmail,
@@ -160,7 +172,9 @@ const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const resetURL = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/reset-password/${resetToken}`;
 
     await sendEmail(
       user.email,
